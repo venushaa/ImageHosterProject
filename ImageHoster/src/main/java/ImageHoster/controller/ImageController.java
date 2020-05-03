@@ -111,6 +111,7 @@ public class ImageController {
     //Set the date on which the image is posted
     //Call the updateImage() method in the business logic to update the image
     //Direct to the same page showing the details of that particular updated image
+    
 
     //The method also receives tags parameter which is a string of all the tags separated by a comma using the annotation @RequestParam
     //The method converts the string to a list of all the tags using findOrCreateTags() method and sets the tags attribute of an image as a list of all the tags
