@@ -94,12 +94,23 @@ public class ImageController {
     //The method first needs to convert the list of all the tags to a string containing all the tags separated by a comma and then add this string in a Model type object
     //This string is then displayed by 'edit.html' file as previous tags of an image
     @RequestMapping(value = "/editImage")
-    public String editImage(@RequestParam("imageId") Integer imageId, Model model) {
+    public String editImage(@RequestParam("imageId") Integer imageId, Model model, HttpSession session) {
         Image image = imageService.getImage(imageId);
-
+        User imageUser = image.getUser();
+        //get logged user
+        User user = (User) session.getAttribute("loggeduser");
+        String error = "Only the owner of the image can edit the image";
         String tags = convertTagsToString(image.getTags());
+        //String comments = comment.getText();
         model.addAttribute("image", image);
         model.addAttribute("tags", tags);
+        //model.addAttribute("comments", comments);
+        //check if user trying to edit is not the owner
+        //and display error and not allow any edit
+        if ( imageUser.getId() != user.getId()){
+            model.addAttribute("editError", error);
+            return "images/image.html";
+        }
         return "images/edit";
     }
 
@@ -111,7 +122,7 @@ public class ImageController {
     //Set the date on which the image is posted
     //Call the updateImage() method in the business logic to update the image
     //Direct to the same page showing the details of that particular updated image
-    
+
 
     //The method also receives tags parameter which is a string of all the tags separated by a comma using the annotation @RequestParam
     //The method converts the string to a list of all the tags using findOrCreateTags() method and sets the tags attribute of an image as a list of all the tags
@@ -143,7 +154,24 @@ public class ImageController {
     //The method calls the deleteImage() method in the business logic passing the id of the image to be deleted
     //Looks for a controller method with request mapping of type '/images'
     @RequestMapping(value = "/deleteImage", method = RequestMethod.DELETE)
-    public String deleteImageSubmit(@RequestParam(name = "imageId") Integer imageId) {
+    public String deleteImageSubmit(@RequestParam(name = "imageId") Integer imageId, HttpSession session, Model model) {
+        Image image = imageService.getImage(imageId);
+        //get image owner
+        User imageUser = image.getUser();
+        //get logged user
+        User user = (User) session.getAttribute("loggeduser");
+        //check if user trying to delete is not the owner
+        //and display error and not allow deletes if not owner
+        if ( imageUser.getId() != user.getId()){
+            String error = "Only the owner of the image can delete the image";
+            String tags = convertTagsToString(image.getTags());
+            //String comments = comment.getText();
+            model.addAttribute("deleteError", error);
+            model.addAttribute("image", image);
+            model.addAttribute("tags", tags);
+            //model.addAttribute("comments", comments);
+            return "images/image.html";
+        }
         imageService.deleteImage(imageId);
         return "redirect:/images";
     }
