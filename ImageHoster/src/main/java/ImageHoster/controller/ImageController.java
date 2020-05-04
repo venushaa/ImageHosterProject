@@ -1,5 +1,4 @@
 package ImageHoster.controller;
-
 import ImageHoster.model.Comment;
 import ImageHoster.model.Image;
 import ImageHoster.model.Tag;
