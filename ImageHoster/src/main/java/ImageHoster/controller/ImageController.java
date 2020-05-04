@@ -1,8 +1,11 @@
 package ImageHoster.controller;
 
+import ImageHoster.model.Comment;
 import ImageHoster.model.Image;
 import ImageHoster.model.Tag;
 import ImageHoster.model.User;
+import ImageHoster.repository.CommentRepository;
+import ImageHoster.service.CommentService;
 import ImageHoster.service.ImageService;
 import ImageHoster.service.TagService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.*;
 
 @Controller
@@ -26,6 +30,9 @@ public class ImageController {
 
     @Autowired
     private TagService tagService;
+
+    @Autowired
+    private CommentService commentService;
 
     //This method displays all the images in the user home page after successful login
     @RequestMapping("images")
@@ -52,6 +59,7 @@ public class ImageController {
         Image image = imageService.getImageByTitleId(title, id);
         model.addAttribute("image", image);
         model.addAttribute("tags", image.getTags());
+        model.addAttribute("comments",image.getComments());
         return "images/image";
     }
 
@@ -87,6 +95,25 @@ public class ImageController {
         return "redirect:/images";
     }
 
+    //@RequestParam("file") MultipartFile file, @RequestParam("tags") String tags, Integer imageId, HttpSession session, Comment comment) throws IOException {
+    @RequestMapping(value = "/image/{image.id}/{image.title}/comments", method = RequestMethod.POST)
+    public String createComment(@PathVariable(value="image.id") Integer imageId, @PathVariable(value="image.title") String title, Model model,HttpSession session, Comment comment) throws IOException{
+        User user = (User) session.getAttribute("loggeduser");
+        Image image = imageService.getImage(imageId);
+        Date date = new java.util.Date();
+        LocalDate localDate = new java.sql.Date(date.getTime()).toLocalDate();
+
+        comment.setUser(user);
+        comment.setImage(image);
+        comment.setText(comment.getText());
+        comment.setCreatedDate(localDate);
+        commentService.createComment(comment);
+        //return "redirect:/images";
+        return showImage(image.getTitle(), imageId, model);
+    }
+
+
+
     //This controller method is called when the request pattern is of type 'editImage'
     //This method fetches the image with the corresponding id from the database and adds it to the model with the key as 'image'
     //The method then returns 'images/edit.html' file wherein you fill all the updated details of the image
@@ -94,25 +121,28 @@ public class ImageController {
     //The method first needs to convert the list of all the tags to a string containing all the tags separated by a comma and then add this string in a Model type object
     //This string is then displayed by 'edit.html' file as previous tags of an image
     @RequestMapping(value = "/editImage")
-    public String editImage(@RequestParam("imageId") Integer imageId, Model model, HttpSession session) {
+    public String editImage(@RequestParam("imageId") Integer imageId, Model model, HttpSession session, Comment comment) {
         Image image = imageService.getImage(imageId);
         User imageUser = image.getUser();
         //get logged user
         User user = (User) session.getAttribute("loggeduser");
         String error = "Only the owner of the image can edit the image";
         String tags = convertTagsToString(image.getTags());
-        //String comments = comment.getText();
+        String comments = comment.getText();
         model.addAttribute("image", image);
         model.addAttribute("tags", tags);
-        //model.addAttribute("comments", comments);
+        model.addAttribute("comments",image.getComments());
         //check if user trying to edit is not the owner
         //and display error and not allow any edit
         if ( imageUser.getId() != user.getId()){
             model.addAttribute("editError", error);
-            return "images/image.html";
+            return "images/image";
         }
         return "images/edit";
     }
+
+
+
 
     //This controller method is called when the request pattern is of type 'images/edit' and also the incoming request is of PUT type
     //The method receives the imageFile, imageId, updated image, along with the Http Session
@@ -146,7 +176,7 @@ public class ImageController {
         updatedImage.setDate(new Date());
 
         imageService.updateImage(updatedImage);
-        return "redirect:/images/" + updatedImage.getTitle();
+        return "redirect:/images/" + updatedImage.getId() + "/" + updatedImage.getTitle();
     }
 
 
